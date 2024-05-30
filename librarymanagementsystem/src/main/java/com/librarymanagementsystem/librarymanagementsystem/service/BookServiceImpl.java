@@ -5,8 +5,6 @@ import com.librarymanagementsystem.librarymanagementsystem.entity.User;
 import com.librarymanagementsystem.librarymanagementsystem.exception.BooknOtFoundException;
 import com.librarymanagementsystem.librarymanagementsystem.exception.UserNotFoundException;
 import com.librarymanagementsystem.librarymanagementsystem.model.BookDto;
-import com.librarymanagementsystem.librarymanagementsystem.model.UserDto;
-import com.librarymanagementsystem.librarymanagementsystem.repository.BookPageRepository;
 import com.librarymanagementsystem.librarymanagementsystem.repository.BookRepository;
 import com.librarymanagementsystem.librarymanagementsystem.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,11 +21,8 @@ public class BookServiceImpl implements  BookService{
     BookRepository bookRepository;
     @Autowired
     UserRepository userRepository;
-
-    @Autowired
-    BookPageRepository bookPageRepository;
     @Override
-    public Page<BookDto> getAll(Integer offset, Integer pageSize, Integer id, String userName, String password) throws BooknOtFoundException {
+    public Page<BookDto> getAll(Integer offset, Integer pageSize, Integer id, String userName, String password) throws BooknOtFoundException,UserNotFoundException {
         // Fetch the user by ID
         Optional<User> userOptional = userRepository.findById(id);
         if (!userOptional.isPresent()) {
@@ -41,7 +36,7 @@ public class BookServiceImpl implements  BookService{
             Pageable pageable = PageRequest.of(offset, pageSize);
 
             // Fetch paginated list of books
-            Page<Book> bookPage = bookPageRepository.findAll(pageable);
+            Page<Book> bookPage = bookRepository.findAll(pageable);
 
             if (bookPage.isEmpty()) {
                 throw new BooknOtFoundException("No books are available");
@@ -61,12 +56,12 @@ public class BookServiceImpl implements  BookService{
             // Return a paginated list of BookDto objects
             return new PageImpl<>(bookDtoList, pageable, bookPage.getTotalElements());
         } else {
-            throw new BooknOtFoundException("Invalid username or password");
+            throw new UserNotFoundException("Invalid username or password");
         }
     }
 
     @Override
-    public String addBook(Integer id, String userName, String password, BookDto bookDto) throws BooknOtFoundException {
+    public String addBook(Integer id, String userName, String password, BookDto bookDto) throws BooknOtFoundException,UserNotFoundException {
        Optional<User>userList=userRepository.findById(id);
        User user=userList.get();
         if (user.getUserName().equals(userName) && user.getPassword().equals(password)) {
@@ -80,18 +75,17 @@ public class BookServiceImpl implements  BookService{
             bookRepository.save(book);
             return "book added successfully";
         } else {
-            throw new BooknOtFoundException("Invalid username or password");
+            throw new UserNotFoundException("Invalid username or password");
         }
 
     }
 
     @Override
-    public Page<BookDto> serachByName(Integer offset, Integer pageSize, Integer id, String userName, String password, String bookName) throws BooknOtFoundException {
-        Pageable pageable=PageRequest.of(offset,pageSize);
+    public List<BookDto> serachByName(Integer id, String userName, String password, String bookName) throws BooknOtFoundException,UserNotFoundException {
         Optional<User> user=userRepository.findById(id);
         User userList=user.get();
         if (userList.getUserName().equals(userName)&&userList.getPassword().equals(password)){
-          Page <Book> bookList=bookPageRepository.findByBookName(bookName,pageable);
+          List <Book> bookList=bookRepository.findByBookName(bookName);
           List<BookDto> bookDto=bookList.stream().map(book -> {
               BookDto bookDtoList=new BookDto();
               bookDtoList.setBookAuthor(book.getBookAuthor());
@@ -101,21 +95,20 @@ public class BookServiceImpl implements  BookService{
               bookDtoList.setBookId(book.getBookId());
               return bookDtoList;
           }).collect(Collectors.toList());
-            return new PageImpl<>(bookDto, PageRequest.of(offset, pageSize), bookList.getTotalElements());
+            return bookDto;
         }else{
-            throw new BooknOtFoundException("Invalid username or password");
+            throw new UserNotFoundException("Invalid username or password");
         }
 
 
     }
 
     @Override
-    public Page<BookDto> sortByPrice(Integer offset, Integer pageSize, Integer id, String userName, String password) throws BooknOtFoundException {
-        Pageable pageable=PageRequest.of(offset,pageSize,Sort.by(Sort.Direction.ASC, "bookPrice"));
+    public List<BookDto> sortByPrice(Integer id, String userName, String password) throws BooknOtFoundException,UserNotFoundException{
         Optional<User> user=userRepository.findById(id);
         User userDetails=user.get();
         if (userDetails.getUserName().equals(userName)&&userDetails.getPassword().equals(password)){
-            Page<Book> bookPage=bookPageRepository.findAll(pageable);
+            List<Book> bookPage=bookRepository.findAll();
             List<BookDto> bookDto=bookPage.stream().map(book -> {
                 BookDto bookDtoList=new BookDto();
                 bookDtoList.setBookAuthor(book.getBookAuthor());
@@ -125,9 +118,9 @@ public class BookServiceImpl implements  BookService{
                 bookDtoList.setBookId(book.getBookId());
                 return bookDtoList;
             }).collect(Collectors.toList());
-            return new PageImpl<>(bookDto,PageRequest.of(offset,pageSize),bookPage.getTotalElements());
+            return bookDto;
         }else{
-            throw new BooknOtFoundException("user is not available");
+            throw new UserNotFoundException("user is not available");
         }
 
     }

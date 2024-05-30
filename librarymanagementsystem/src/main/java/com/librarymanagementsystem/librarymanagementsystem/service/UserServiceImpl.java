@@ -3,9 +3,7 @@ package com.librarymanagementsystem.librarymanagementsystem.service;
 import com.librarymanagementsystem.librarymanagementsystem.entity.User;
 import com.librarymanagementsystem.librarymanagementsystem.exception.UserNotFoundException;
 import com.librarymanagementsystem.librarymanagementsystem.model.UserDto;
-import com.librarymanagementsystem.librarymanagementsystem.repository.UserPageRepository;
 import com.librarymanagementsystem.librarymanagementsystem.repository.UserRepository;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
@@ -18,8 +16,6 @@ import java.util.stream.Collectors;
 public class UserServiceImpl implements UserService {
     @Autowired
     UserRepository userRepository;
-    @Autowired
-    UserPageRepository userPageRepository;
 
     @Override
     public String addUser(UserDto userDto) throws UserNotFoundException {
@@ -35,7 +31,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public Page<UserDto> getAll(int offset, int pageSize) throws UserNotFoundException {
         Pageable pageable = PageRequest.of(offset, pageSize);
-        Page<User> userList = userPageRepository.findAll(pageable);
+        Page<User> userList = userRepository.findAll(pageable);
         List<UserDto> userDto = userList.stream().map(user -> {
             UserDto userDtoList = new UserDto();
             userDtoList.setUserEmail(user.getUserEmail());
